@@ -1,5 +1,5 @@
 ####Draws a map between 2 coordinates w fixed zoom level 18 using the [Google Static Maps API](http://developers.google.com/maps/documentation/staticmaps/)
-![example](staticmap.png)
+![example](readme.png)
 
 #Idea:
 
