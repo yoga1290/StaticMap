@@ -1,0 +1,199 @@
+<html>
+  <head>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+  
+</head>
+<body>
+<div id="mydiv"></div>
+  <div id="info">
+    
+    
+    <form onsubmit="return start();" action='#'>
+    <div class="panel panel-primary">
+       <div class="panel-heading">
+         Coordinates:
+       </div>
+  <div class="panel-body">
+    
+    <div class="row">
+      <div class="input-group input-group-lg">
+  <span class="input-group-addon">Coordinate#1:</span>
+  <input type="text" class="form-control" id="c1" placeholder="latitude,longitude">
+      </div>
+    </div>
+    
+    
+    <div class="row">
+      <div class="input-group input-group-lg">
+        <span class="input-group-addon">Coordinate#2:</span>
+  <input type="text" class="form-control" id="c2" placeholder="latitude,longitude">
+</div>
+    </div></div>
+    
+  <div class="panel-footer">
+    
+    <button type="submit" onsubmit="start();" class="btn btn-primary btn-lg">
+  <span class="glyphicon glyphicon-map-marker"></span> Start
+</button>
+    
+  </div>
+</div>
+    </form>
+    
+    
+  </div>
+  <canvas id="canvas"></canvas>
+
+<script>
+// ref: http://www.movable-type.co.uk/scripts/latlong.html
+  function latlon2dist(lat1,lon1,lat2,lon2)
+  {
+    var R = 6371; // km
+    var dLat = (lat2-lat1)* Math.PI / 180;//.toRad();
+    var dLon = (lon2-lon1)* Math.PI / 180;//.toRad();
+    lat1 = lat1* Math.PI / 180;//.toRad();
+    lat2 = lat2* Math.PI / 180;//.toRad();
+
+    var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    return R * c;
+  }
+  
+  
+  
+  function xy2latlon(x,y)
+  {
+    var lat=0,lon=0,st=0,ed=100,mid=0,omid=-1,cmp;
+    while(st<=ed)
+      {
+        mid=(st+ed)/2;
+        cmp=latlon2dist(0,0,mid,0);
+        if(cmp<x)
+          st=mid;
+        else if(cmp>x)
+          ed=mid;
+        else
+          {
+            lat=mid;
+            break;
+          }
+        lat=mid;
+        if(mid==omid) break;
+        omid=mid;
+      }
+    st=0;
+    ed=100;
+    mid=0;
+    omid=-1;
+    while(st<=ed)
+      {
+        omid=mid;
+        mid=(st+ed)/2;
+        if(mid==omid) break;
+
+        cmp=latlon2dist(0,0,0,mid);
+        if(cmp<y)
+          st=mid;
+        else if(cmp>y)
+          ed=mid;
+        else
+          {
+            lon=mid;
+            break;
+          }
+          lon=mid;
+      }
+    return [lat,lon];
+  }
+
+var txtHTML="<table>",imgURL=[],imgW=400,imgH=400;
+function loadImage(i,j)
+{
+  /*
+  console.log(i+","+j);
+  if((i+1)>=imgURL.length-1){i=0;j++;}
+  if((i+1)<imgURL.length && j<imgURL[0].length)
+      setTimeout('loadImage('+(i+1)+','+(j)+');', 10);
+  if(true)
+    return;
+  // */
+  var canvas = document.getElementById('canvas');
+      var context = canvas.getContext('2d');
+  var img=new Image();
+  img.onload=function(){
+    //24
+    context.drawImage(img,0,0,img.width,img.height-24,imgW*j,imgH*i,400,400);
+
+    /*
+    if(i==0) txtHTML+="<tr>";
+    txtHTML+="<td><img src='"+canvas.toDataURL()+"' /></td>";
+    if(i==imgURL[0].length-1) txtHTML+="</tr>";
+    //*/
+    var ni=i,nj=j;
+    if(i>=imgURL.length-1 && j>=imgURL[0].length-1)
+      return;//exit
+    if(ni>=imgURL.length-1){ni=-1;nj=(j+1)%imgURL[0].length;}
+    if(ni+1<imgURL.length && nj<imgURL[0].length)
+      setTimeout('loadImage('+(ni+1)+','+(nj)+');', 2000);
+    console.log("loading ("+i+","+j+")");
+//    else  document.getElementById("info").innerHTML=txtHTML;
+  };
+  img.src=imgURL[i][j];
+    
+  console.log("loading "+imgURL[i][j]);
+}
+  
+function xy2map(sx,sy,ex,ey,dx,dy)
+{
+    var i=sx,j=sy,latlon=[],r=0,c=0;
+    for(i=sx;i>=ex;i-=dx)
+    {
+      imgURL.push([]);//new row=append a new sub-array
+      for(j=sy;j<=ey; j+=dy)
+       {
+          latlon=xy2latlon(i,j);
+
+          imgURL[r].push('http://maps.googleapis.com/maps/api/staticmap?center='+latlon[0]+','+latlon[1]+'&zoom=18&size='+imgW+'x'+imgH+'&sensor=false');
+        }
+        r++;
+    }
+    console.log(r+","+c);
+    console.log(r*imgH+","+c*imgW);
+    document.getElementById('canvas').width=imgW*((ey-sy)/dy);
+    document.getElementById('canvas').height=imgH*r;
+    loadImage(0,0);
+}
+  
+
+function start()
+{
+    var c1=document.getElementById("c1").value.split(','),
+        c2=document.getElementById("c2").value.split(',');
+  
+    alert(c1[0]+","+c2[0]);
+    var x1=latlon2dist(0,0,parseFloat(c1[0]),0),
+        x2=latlon2dist(0,0,parseFloat(c2[0]),0);
+    var y1=latlon2dist(0,0,0,parseFloat(c1[1])),
+        y2=latlon2dist(0,0,0,parseFloat(c2[1]));
+  
+  
+    // works for countries like Egypt; smth below europe!
+    xy2map(Math.max(x1,x2),Math.min(y1,y2),
+                Math.min(x1,x2),Math.max(y1,y2),
+                0.1920996142924337,0.2389990922858013);
+  return false; // prevent form action
+}
+</script>
+
+
+</body>
+</html>
